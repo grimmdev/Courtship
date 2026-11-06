@@ -1,14 +1,15 @@
-<img src="assets/banner.jpg" />
+<img src="assets/banner.jpg" alt="Banner" />
 
 <div align="center">
 
 **The protocol layer between your agent and your LÖVE game.**
 
-`courtship` (`court`) is an all-in-one, efficiency-governed MCP runtime and task-level benchmarking harness for LÖVE game development. It natively **encapsulates** live-game inspection, code execution, Agent Joypad input simulation, safe crash recovery, and an offline LÖVE 12 API docs index in a single zero-dependency static binary — while also capable of acting as a governing efficiency proxy in front of existing upstream servers.
+`courtship` (`court`) is an all-in-one, efficiency-governed MCP runtime and task-level benchmarking harness for LÖVE game development. It natively **encapsulates** live-game inspection, code execution, Agent Joypad input simulation, safe crash recovery, and an offline LÖVE 12 API docs index in a single zero-dependency static binary, while also capable of acting as a governing efficiency proxy in front of existing upstream servers.
 
 [![CI](https://github.com/grimmdev/Courtship/actions/workflows/ci.yml/badge.svg)](https://github.com/grimmdev/Courtship/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/grimmdev/Courtship)](https://github.com/grimmdev/Courtship/releases)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
+[![Glama](https://glama.ai/mcp/servers/grimmdev/Courtship/badges/score.svg)](https://glama.ai/mcp/servers/grimmdev/Courtship)
 
 </div>
 
