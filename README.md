@@ -189,7 +189,6 @@ max_regression = "10%"
 
 ## 7. License
 
-Dual-licensed under either of:
+Licensed under:
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
-- MIT license ([LICENSE-MIT](LICENSE-MIT))
 
