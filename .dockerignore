@@ -1,0 +1,13 @@
+target/
+.git/
+.github/
+.courtship/
+fixtures/
+public/
+assets/
+*.png
+*.svg
+*.sqlite
+*.sqlite-wal
+*.sqlite-journal
+

@@ -100,13 +100,13 @@ enum DocsCommands {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt().with_writer(std::io::stderr).init();
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Proxy { eager, .. } => {
             let server = ProxyServer::new(eager);
-            println!("[Courtship] Proxy initialized (eager={}). Ready for MCP JSON-RPC.", eager);
+            eprintln!("[Courtship] Proxy initialized (eager={}). Ready for MCP JSON-RPC.", eager);
             // Stdio loop for MCP clients
             run_stdio_server(server).await?;
         }
