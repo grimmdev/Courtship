@@ -55,6 +55,12 @@ enum Commands {
         /// Generate an HTML benchmark leaderboard dashboard for GitHub Pages
         #[arg(long)]
         html_out: Option<PathBuf>,
+        /// Run all suites in the suite directory
+        #[arg(long)]
+        all: bool,
+        /// Directory containing YAML benchmark suites
+        #[arg(long, default_value = "./suites")]
+        suite_dir: PathBuf,
     },
     /// Inspect local LÖVE 12 documentation index
     Docs {
@@ -131,85 +137,110 @@ async fn main() -> Result<()> {
                 }
             }
         }
-        Commands::Bench { suite, ci, max_regression, compare, save_baseline, submit, html_out } => {
-            println!("[Courtship] Running benchmark suite: {}", suite.display());
-            if !suite.exists() {
-                eprintln!("[Courtship] Error: Suite file not found at {}", suite.display());
-                std::process::exit(1);
-            }
-
-            let parsed = BenchSuite::from_yaml_file(&suite)?;
+        Commands::Bench { suite, ci, max_regression, compare, save_baseline, submit, html_out, all, suite_dir } => {
             let runner = BenchRunner::new();
+            let mut suites_to_run = Vec::new();
 
-            if let Some(comp_str) = compare {
-                let parts: Vec<&str> = comp_str.split(',').collect();
-                let b_name = parts.first().unwrap_or(&"baseline");
-                let c_name = parts.get(1).unwrap_or(&"courtship");
-
-                let baseline_rep = runner.run_suite(&parsed, false);
-                let candidate_rep = runner.run_suite(&parsed, true);
-                let comp = BenchRunner::compare(b_name, c_name, &baseline_rep, &candidate_rep);
-
-                println!("\n{:<22} {:>8} {:>7} {:>7} {:>6} {:>8}", "task", "tokens", "calls", "p95ms", "turns", "success");
-                println!("{}", "-".repeat(62));
-                for t in &candidate_rep.tasks {
-                    let status_icon = if t.success { "PASS" } else { "FAIL" };
-                    println!("{:<22} {:>8} {:>7} {:>7} {:>6} {:>8}", t.id, t.tokens, t.calls, t.p95_ms, t.turns, status_icon);
+            if all {
+                println!("[Courtship] Discovering suites in: {}", suite_dir.display());
+                if let Ok(entries) = std::fs::read_dir(&suite_dir) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.extension().and_then(|e| e.to_str()) == Some("yaml")
+                            || path.extension().and_then(|e| e.to_str()) == Some("yml")
+                        {
+                            suites_to_run.push(path);
+                        }
+                    }
                 }
-                println!("{}", "-".repeat(62));
-                println!("TOTAL (per task)       {:>8} {:>7} {:>7} {:>6}      {}/{}",
-                    candidate_rep.avg_tokens_per_task, comp.candidate_calls / comp.candidate_calls.max(1).min(candidate_rep.tasks.len()), 110, 2, candidate_rep.success_count, candidate_rep.total_tasks
-                );
-                println!("vs {:<18} -{:.1}%   -33%    -40%     -         -",
-                    comp.baseline_name, comp.token_savings_pct
-                );
-
-                if let Some(ref out_file) = html_out {
-                    let list = vec![(parsed.name.clone(), comp.clone())];
-                    html_report::HtmlLeaderboardGenerator::generate_page(&list, out_file)?;
-                    println!("[Courtship] HTML benchmark leaderboard emitted to: {}", out_file.display());
-                }
-
-                if submit {
-                    let submission = BenchRunner::create_submission(&parsed.name, &comp, &candidate_rep);
-                    let sub_file = PathBuf::from(format!(".courtship/submissions/{}_{}.json", parsed.name, submission.timestamp_epoch_secs));
-                    BenchRunner::save_submission(&submission, &sub_file)?;
-                    println!("\n[Courtship Leaderboard] Submission artifact generated at: {}", sub_file.display());
-                    println!("[Courtship Leaderboard] Ready for publishing: -{:.1}% tokens vs {}", comp.token_savings_pct, comp.baseline_name);
-                }
-
-                return Ok(());
+                suites_to_run.sort();
+            } else {
+                suites_to_run.push(suite);
             }
 
-            let report = runner.run_suite(&parsed, true);
+            let mut all_comparisons = Vec::new();
 
-            println!("\n{:<22} {:>8} {:>7} {:>7} {:>6} {:>8}", "task", "tokens", "calls", "p95ms", "turns", "success");
-            println!("{}", "-".repeat(62));
-            for t in &report.tasks {
-                let status_icon = if t.success { "PASS" } else { "FAIL" };
-                println!("{:<22} {:>8} {:>7} {:>7} {:>6} {:>8}", t.id, t.tokens, t.calls, t.p95_ms, t.turns, status_icon);
-            }
-            println!("{}", "-".repeat(62));
-            println!("TOTAL (avg per task)   {:>8}       -       -      -      {}/{}",
-                report.avg_tokens_per_task, report.success_count, report.total_tasks
-            );
+            for current_suite_path in &suites_to_run {
+                println!("\n[Courtship] Running benchmark suite: {}", current_suite_path.display());
+                if !current_suite_path.exists() {
+                    eprintln!("[Courtship] Error: Suite file not found at {}", current_suite_path.display());
+                    std::process::exit(1);
+                }
 
-            if save_baseline {
-                let baseline_path = PathBuf::from(".courtship/baseline.json");
-                BenchRunner::save_baseline(&report, &baseline_path)?;
-                println!("[Courtship] Baseline pinned to {}", baseline_path.display());
-            }
+                let parsed = BenchSuite::from_yaml_file(current_suite_path)?;
 
-            if ci {
-                println!("[Courtship] Running CI regression gate (max regression: +{:.1}%)...", max_regression);
-                let baseline_tokens = if let Ok(base) = BenchRunner::load_baseline(".courtship/baseline.json") {
-                    base.avg_tokens_per_task
+                if let Some(ref comp_str) = compare {
+                    let parts: Vec<&str> = comp_str.split(',').collect();
+                    let b_name = parts.first().unwrap_or(&"baseline");
+                    let c_name = parts.get(1).unwrap_or(&"courtship");
+
+                    let baseline_rep = runner.run_suite(&parsed, false);
+                    let candidate_rep = runner.run_suite(&parsed, true);
+                    let comp = BenchRunner::compare(b_name, c_name, &baseline_rep, &candidate_rep);
+
+                    println!("{:<22} {:>8} {:>7} {:>7} {:>6} {:>8}", "task", "tokens", "calls", "p95ms", "turns", "success");
+                    println!("{}", "-".repeat(62));
+                    for t in &candidate_rep.tasks {
+                        let status_icon = if t.success { "PASS" } else { "FAIL" };
+                        println!("{:<22} {:>8} {:>7} {:>7} {:>6} {:>8}", t.id, t.tokens, t.calls, t.p95_ms, t.turns, status_icon);
+                    }
+                    println!("{}", "-".repeat(62));
+                    println!("TOTAL (per task)       {:>8} {:>7} {:>7} {:>6}      {}/{}",
+                        candidate_rep.avg_tokens_per_task, comp.candidate_calls / comp.candidate_calls.max(1).min(candidate_rep.tasks.len()), 110, 2, candidate_rep.success_count, candidate_rep.total_tasks
+                    );
+                    println!("vs {:<18} -{:.1}%   -33%    -40%     -         -",
+                        comp.baseline_name, comp.token_savings_pct
+                    );
+
+                    all_comparisons.push((parsed.name.clone(), comp.clone()));
+
+                    if submit {
+                        let submission = BenchRunner::create_submission(&parsed.name, &comp, &candidate_rep);
+                        let sub_file = PathBuf::from(format!(".courtship/submissions/{}_{}.json", parsed.name, submission.timestamp_epoch_secs));
+                        BenchRunner::save_submission(&submission, &sub_file)?;
+                        println!("[Courtship Leaderboard] Submission artifact generated at: {}", sub_file.display());
+                    }
                 } else {
-                    report.avg_tokens_per_task
-                };
+                    let report = runner.run_suite(&parsed, true);
 
-                BenchRunner::verify_regression(report.avg_tokens_per_task, baseline_tokens, max_regression)?;
-                println!("[Courtship] CI gate passed.");
+                    println!("{:<22} {:>8} {:>7} {:>7} {:>6} {:>8}", "task", "tokens", "calls", "p95ms", "turns", "success");
+                    println!("{}", "-".repeat(62));
+                    for t in &report.tasks {
+                        let status_icon = if t.success { "PASS" } else { "FAIL" };
+                        println!("{:<22} {:>8} {:>7} {:>7} {:>6} {:>8}", t.id, t.tokens, t.calls, t.p95_ms, t.turns, status_icon);
+                    }
+                    println!("{}", "-".repeat(62));
+                    println!("TOTAL (avg per task)   {:>8}       -       -      -      {}/{}",
+                        report.avg_tokens_per_task, report.success_count, report.total_tasks
+                    );
+
+                    if save_baseline {
+                        let baseline_path = PathBuf::from(format!(".courtship/baseline_{}.json", parsed.name));
+                        BenchRunner::save_baseline(&report, &baseline_path)?;
+                        println!("[Courtship] Baseline pinned to {}", baseline_path.display());
+                    }
+
+                    if ci {
+                        println!("[Courtship] Running CI regression gate (max regression: +{:.1}%)...", max_regression);
+                        let baseline_tokens = if let Ok(base) = BenchRunner::load_baseline(".courtship/baseline.json") {
+                            base.avg_tokens_per_task
+                        } else {
+                            report.avg_tokens_per_task
+                        };
+
+                        BenchRunner::verify_regression(report.avg_tokens_per_task, baseline_tokens, max_regression)?;
+                        println!("[Courtship] CI gate passed for {}.", parsed.name);
+                    }
+                }
+            }
+
+            if let Some(ref out_file) = html_out {
+                if !all_comparisons.is_empty() {
+                    html_report::HtmlLeaderboardGenerator::generate_page(&all_comparisons, out_file)?;
+                    println!("\n[Courtship] Complete HTML benchmark leaderboard ({} suites) emitted to: {}",
+                        all_comparisons.len(), out_file.display()
+                    );
+                }
             }
         }
         Commands::Docs { cmd } => {
