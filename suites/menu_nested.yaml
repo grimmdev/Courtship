@@ -1,0 +1,24 @@
+name: menu-nested-suite
+setup:
+  game: ./fixtures/menu_nested
+  seed: 202
+tasks:
+  - id: find-fullscreen-button
+    prompt: "Traverse the modal UI hierarchy to locate the fullscreen toggle button ID."
+    expect:
+      file_contains: "toggle_fullscreen"
+      max_turns: 6
+    weight: 2
+  - id: inspect-button-style
+    prompt: "What is the background color of the fullscreen button?"
+    expect:
+      file_contains: "bg"
+    weight: 1
+metrics:
+  - tokens_in
+  - tokens_out
+  - calls
+  - latency_p95
+  - turns
+  - success
+

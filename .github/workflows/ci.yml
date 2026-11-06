@@ -1,0 +1,51 @@
+name: CI & Efficiency Regression Gate
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+
+jobs:
+  test-and-bench:
+    name: Test & Benchmark Regression Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Run Test Suite (Unit, Golden, Integration)
+        run: cargo test --workspace
+
+      - name: Run Platformer Benchmark Gate
+        run: cargo run -p court -- bench --suite ./suites/platformer.yaml --ci --max-regression 10.0
+
+      - name: Run UI-Heavy Benchmark Gate
+        run: cargo run -p court -- bench --suite ./suites/ui_heavy.yaml --ci --max-regression 10.0
+
+      - name: Run Menu-Nested Benchmark Gate
+        run: cargo run -p court -- bench --suite ./suites/menu_nested.yaml --ci --max-regression 10.0
+
+      - name: Run MCP Configuration & Tax Audit
+        run: cargo run -p court -- doctor --ci
+

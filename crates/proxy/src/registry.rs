@@ -1,0 +1,241 @@
+use std::collections::HashMap;
+use serde_json::Value;
+use courtship_shaper::TokenCounter;
+use crate::protocol::{ToolDefinition, ToolSummary};
+
+/// Manages active standing meta-tools, dynamic upstream tool discovery, and turn-based eviction.
+pub struct ToolRegistry {
+    standing_tools: Vec<ToolDefinition>,
+    upstream_tools: HashMap<String, ToolDefinition>,
+    loaded_tools: HashMap<String, usize>,
+    evict_after_turns: usize,
+    token_counter: TokenCounter,
+}
+
+impl ToolRegistry {
+    /// Creates a new tool registry with configured turn-based eviction.
+    pub fn new(evict_after_turns: usize, counter: TokenCounter) -> Self {
+        let mut registry = Self {
+            standing_tools: Vec::new(),
+            upstream_tools: HashMap::new(),
+            loaded_tools: HashMap::new(),
+            evict_after_turns,
+            token_counter: counter,
+        };
+        registry.init_standing_tools();
+        registry
+    }
+
+    /// Initializes the standing meta-tool schema surface (kept strictly < 500 tokens).
+    fn init_standing_tools(&mut self) {
+        self.standing_tools = vec![
+            ToolDefinition {
+                name: "discover_tools".to_string(),
+                description: "Search available tools by keyword or intent without loading full schemas into context.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "query": { "type": "string", "description": "Keyword or action (e.g. 'physics', 'screenshot', 'objects')" },
+                        "limit": { "type": "integer", "default": 8 }
+                    },
+                    "required": ["query"]
+                }),
+            },
+            ToolDefinition {
+                name: "load_tool_schema".to_string(),
+                description: "Load the full JSON schema for a specific tool into active context on-demand.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string", "description": "The exact tool name" }
+                    },
+                    "required": ["name"]
+                }),
+            },
+            ToolDefinition {
+                name: "call_tool".to_string(),
+                description: "Invoke any tool through the proxy with automatic response compression and shaping.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "name": { "type": "string", "description": "The target tool name" },
+                        "arguments": { "type": "object", "description": "Tool parameters" }
+                    },
+                    "required": ["name", "arguments"]
+                }),
+            },
+            ToolDefinition {
+                name: "love_task".to_string(),
+                description: "Intelligent router for LÖVE development: routes to docs, live inspection, or code execution.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "goal": { "type": "string", "description": "What you want to accomplish or query" },
+                        "context": { "type": "string", "description": "Optional background or current game state info" }
+                    },
+                    "required": ["goal"]
+                }),
+            },
+            ToolDefinition {
+                name: "report_usage".to_string(),
+                description: "Returns the current session token ledger and savings breakdown.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+            },
+            ToolDefinition {
+                name: "simulate_input".to_string(),
+                description: "Agent Joypad: Dispatches timed keyboard and button sequences to test gameplay mechanics.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "sequence": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "action": { "type": "string", "enum": ["press", "keydown", "keyup"] },
+                                    "key": { "type": "string", "description": "Key code (e.g. 'space', 'd', 'left')" },
+                                    "duration_ms": { "type": "integer", "default": 100 }
+                                },
+                                "required": ["key"]
+                            }
+                        }
+                    },
+                    "required": ["sequence"]
+                }),
+            },
+            ToolDefinition {
+                name: "step_frames".to_string(),
+                description: "Deterministic frame stepping: Advances game physics and logic by N fixed-timestep frames.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "count": { "type": "integer", "default": 1, "description": "Number of frames to advance" },
+                        "dt": { "type": "number", "default": 0.016666, "description": "Fixed delta time per frame in seconds" }
+                    }
+                }),
+            },
+            ToolDefinition {
+                name: "get_last_crash".to_string(),
+                description: "Safe Crash Diagnostics: Retrieves file, line number, traceback, and locals from intercepted panics.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+            },
+            ToolDefinition {
+                name: "clear_crash".to_string(),
+                description: "Resumes normal game execution after applying a code hot-patch.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {}
+                }),
+            },
+        ];
+    }
+
+    /// Registers a tool definition provided by an upstream engine bridge.
+    pub fn register_upstream_tool(&mut self, tool: ToolDefinition) {
+        self.upstream_tools.insert(tool.name.clone(), tool);
+    }
+
+    /// Returns the standing meta-tool slice.
+    pub fn standing_tools(&self) -> &[ToolDefinition] {
+        &self.standing_tools
+    }
+
+    /// Queries the registry for matching tools based on a text query.
+    pub fn discover(&self, query: &str, limit: usize) -> Vec<ToolSummary> {
+        let q = query.to_lowercase();
+        self.upstream_tools
+            .values()
+            .filter(|t| t.name.to_lowercase().contains(&q) || t.description.to_lowercase().contains(&q))
+            .take(limit)
+            .map(|t| ToolSummary {
+                name: t.name.clone(),
+                one_line: t.description.lines().next().unwrap_or("").to_string(),
+                cost_hint: "shaped (~50-150 tok)".to_string(),
+            })
+            .collect()
+    }
+
+    /// Loads the full JSON schema for a target tool, setting its active turn TTL.
+    pub fn load_schema(&mut self, name: &str) -> Option<&ToolDefinition> {
+        if let Some(tool) = self.upstream_tools.get(name) {
+            self.loaded_tools.insert(name.to_string(), self.evict_after_turns);
+            Some(tool)
+        } else {
+            None
+        }
+    }
+
+    /// Decrements TTL turns for loaded schemas, evicting expired tools.
+    pub fn tick_turn(&mut self) {
+        let mut expired = Vec::new();
+        for (name, turns) in self.loaded_tools.iter_mut() {
+            if *turns > 1 {
+                *turns -= 1;
+            } else {
+                expired.push(name.clone());
+            }
+        }
+        for name in expired {
+            self.loaded_tools.remove(&name);
+        }
+    }
+
+    /// Calculates token count of the standing meta-tool surface.
+    pub fn calculate_standing_tokens(&self) -> usize {
+        let val = serde_json::to_value(&self.standing_tools).unwrap_or(Value::Null);
+        self.token_counter.count_json_tokens(&val)
+    }
+
+    /// Calculates token count if all upstream schemas were loaded eagerly.
+    pub fn calculate_all_upstream_tokens(&self) -> usize {
+        let all: Vec<&ToolDefinition> = self.upstream_tools.values().collect();
+        let val = serde_json::to_value(&all).unwrap_or(Value::Null);
+        self.token_counter.count_json_tokens(&val)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_standing_surface_tokens() {
+        let counter = TokenCounter::default();
+        let registry = ToolRegistry::new(6, counter);
+        let standing_tokens = registry.calculate_standing_tokens();
+
+        println!("Standing surface tokens measured: {}", standing_tokens);
+        // Architectural target: standing surface stays well below 600 tokens
+        assert!(standing_tokens < 600, "Standing tokens was {standing_tokens}, exceeded 600 limit!");
+    }
+
+    #[test]
+    fn test_tool_discovery_and_eviction() {
+        let counter = TokenCounter::default();
+        let mut registry = ToolRegistry::new(2, counter);
+        registry.register_upstream_tool(ToolDefinition {
+            name: "get_objects".to_string(),
+            description: "Inspect game entities and their positions".to_string(),
+            input_schema: serde_json::json!({"type": "object"}),
+        });
+
+        let found = registry.discover("entities", 5);
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].name, "get_objects");
+
+        assert!(registry.load_schema("get_objects").is_some());
+        assert_eq!(registry.loaded_tools.len(), 1);
+
+        registry.tick_turn();
+        assert_eq!(registry.loaded_tools.len(), 1);
+
+        registry.tick_turn(); // Evicts after 2 inactive turns
+        assert_eq!(registry.loaded_tools.len(), 0);
+    }
+}

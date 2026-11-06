@@ -1,0 +1,25 @@
+{
+  "suite_name": "platformer-core",
+  "tasks": [
+    {
+      "id": "fix-double-jump",
+      "tokens": 316,
+      "calls": 2,
+      "p95_ms": 110,
+      "turns": 2,
+      "success": true
+    },
+    {
+      "id": "spawn-coin",
+      "tokens": 307,
+      "calls": 2,
+      "p95_ms": 110,
+      "turns": 2,
+      "success": true
+    }
+  ],
+  "total_tokens": 623,
+  "avg_tokens_per_task": 311,
+  "success_count": 2,
+  "total_tasks": 2
+}

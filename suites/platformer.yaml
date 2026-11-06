@@ -1,0 +1,24 @@
+name: platformer-core
+setup:
+  game: ./fixtures/platformer
+  seed: 42
+tasks:
+  - id: fix-double-jump
+    prompt: "Jumping twice doesn't work. Find and fix it."
+    expect:
+      file_contains: "jumps < 2"
+      max_turns: 12
+    weight: 2
+  - id: spawn-coin
+    prompt: "Spawn a coin at the player's position."
+    expect:
+      object_type_exists: "coin"
+    weight: 1
+metrics:
+  - tokens_in
+  - tokens_out
+  - calls
+  - latency_p95
+  - turns
+  - success
+

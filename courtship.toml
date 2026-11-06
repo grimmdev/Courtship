@@ -1,0 +1,24 @@
+# courtship.toml - Courtship MCP Proxy Configuration
+
+[proxy]
+port = 12345
+max_response_tokens = 1500
+evict_after_turns = 6
+delta_notifications = true
+eager = false
+
+[upstream.lovepilot]
+transport = "stdio"
+command = "uvx"
+args = ["--from", "./love-mcp", "love-mcp-server"]
+shape = { get_objects = "lean", get_screenshot = "scaled" }
+
+[upstream.docs]
+transport = "builtin"
+index = "./lua54-love12.sqlite"
+
+[bench]
+suite_dir = "./suites"
+baseline = ".courtship/baseline.json"
+max_regression = "10%"
+

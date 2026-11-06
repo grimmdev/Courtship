@@ -1,0 +1,42 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/cli",
+    "crates/proxy",
+    "crates/shaper",
+    "crates/bench",
+    "crates/docs-index",
+    "crates/bridge",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Courtship Contributors"]
+license = "MIT OR Apache-2.0"
+homepage = "https://github.com/courtship/courtship"
+
+[workspace.dependencies]
+tokio = { version = "1.43", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+clap = { version = "4.5", features = ["derive", "env"] }
+thiserror = "2.0"
+anyhow = "1.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+tiktoken-rs = "0.6"
+rusqlite = { version = "0.33", features = ["bundled"] }
+async-trait = "0.1"
+toml = "0.8"
+regex = "1.11"
+tempfile = "3.17"
+walkdir = "2.5"
+
+# Workspace crates
+courtship-proxy = { path = "crates/proxy" }
+courtship-shaper = { path = "crates/shaper" }
+courtship-bench = { path = "crates/bench" }
+courtship-docs = { path = "crates/docs-index" }
+courtship-bridge = { path = "crates/bridge" }
+

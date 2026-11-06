@@ -1,0 +1,25 @@
+# Rust build artifacts
+/target
+*.pdb
+**/*.rs.bk
+
+# Local SQLite databases & journals
+*.sqlite
+*.sqlite-journal
+*.sqlite-wal
+.courtship/docs.sqlite
+
+# Courtship transient runtime caches & temp mounts
+.courtship/cache/
+.courtship/tmp/
+.courtship/submissions/
+
+# OS and Editor generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log

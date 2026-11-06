@@ -1,0 +1,24 @@
+name: ui-heavy-suite
+setup:
+  game: ./fixtures/ui_heavy
+  seed: 101
+tasks:
+  - id: inspect-hud-mana
+    prompt: "Check the current mana bar fill and score values."
+    expect:
+      file_contains: "hud.mana"
+      max_turns: 4
+    weight: 1
+  - id: capture-inventory-region
+    prompt: "Capture a screenshot of only the inventory grid region (x: 20, y: 400, w: 384, h: 192)."
+    expect:
+      object_type_exists: "inventory"
+    weight: 2
+metrics:
+  - tokens_in
+  - tokens_out
+  - calls
+  - latency_p95
+  - turns
+  - success
+
