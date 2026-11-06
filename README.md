@@ -9,6 +9,7 @@
 [![CI](https://github.com/grimmdev/Courtship/actions/workflows/ci.yml/badge.svg)](https://github.com/grimmdev/Courtship/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/grimmdev/Courtship)](https://github.com/grimmdev/Courtship/releases)
 [![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
+[![Glama](https://glama.ai/mcp/servers/grimmdev/Courtship/badges/score.svg)](https://glama.ai/mcp/servers/grimmdev/Courtship)
 
 </div>
 
