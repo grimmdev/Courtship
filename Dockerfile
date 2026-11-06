@@ -39,6 +39,11 @@ COPY --from=builder /app/target/release/court /usr/local/bin/court
 # Set environment
 ENV RUST_BACKTRACE=1
 
+# MCP registry verification and metadata labels
+LABEL io.modelcontextprotocol.server.name="io.github.grimmdev/courtship"
+LABEL org.opencontainers.image.source="https://github.com/grimmdev/Courtship"
+LABEL org.opencontainers.image.description="Efficiency-governed MCP runtime, proxy, and benchmark CLI for LOVE (Lua) games"
+
 # Expose default proxy port if running in network mode
 EXPOSE 12345
 

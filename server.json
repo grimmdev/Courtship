@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.grimmdev/courtship",
+  "title": "Courtship",
+  "description": "Efficiency-governed Model Context Protocol (MCP) runtime, proxy, and benchmark engine for LOVE (Lua) games.",
+  "repository": {
+    "url": "https://github.com/grimmdev/Courtship.git",
+    "source": "github"
+  },
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/grimmdev/courtship:1.0.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
+

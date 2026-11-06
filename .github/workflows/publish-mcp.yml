@@ -1,0 +1,52 @@
+name: Publish to Official MCP Registry
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Specific version to publish (e.g. 1.0.0)'
+        required: false
+        default: ''
+        type: string
+
+jobs:
+  publish:
+    name: Publish to MCP Registry
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync version in server.json
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            TAG="${GITHUB_REF#refs/tags/v}"
+            if [ -n "$TAG" ] && [ "$TAG" != "$GITHUB_REF" ]; then
+              VERSION="$TAG"
+            fi
+          fi
+          if [ -n "$VERSION" ]; then
+            VERSION="${VERSION#v}"
+            echo "Syncing server.json version to $VERSION"
+            sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" server.json
+            sed -i "s|\"identifier\": \"ghcr.io/grimmdev/courtship:.*\"|\"identifier\": \"ghcr.io/grimmdev/courtship:$VERSION\"|" server.json
+          fi
+          cat server.json
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          chmod +x mcp-publisher
+
+      - name: Authenticate to MCP Registry via GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish server to MCP Registry
+        run: ./mcp-publisher publish
