@@ -2,7 +2,7 @@
 -- Provides safe error containment, deterministic input simulation, and MCP TCP inspection.
 
 local bridge = {
-    version = "1.0.0",
+    version = "1.0.1",
     port = 12345,
     server = nil,
     clients = {},

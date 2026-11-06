@@ -213,7 +213,7 @@ impl BenchRunner {
         };
 
         LeaderboardSubmission {
-            courtship_version: "1.0.0".to_string(),
+            courtship_version: "1.0.1".to_string(),
             suite_name: suite_name.to_string(),
             baseline_name: comp.baseline_name.clone(),
             candidate_name: comp.candidate_name.clone(),

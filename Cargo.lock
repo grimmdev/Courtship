@@ -216,7 +216,7 @@ checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
 name = "court"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -237,7 +237,7 @@ dependencies = [
 
 [[package]]
 name = "courtship-bench"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "courtship-proxy",
@@ -254,7 +254,7 @@ dependencies = [
 
 [[package]]
 name = "courtship-bridge"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "serde",
@@ -265,7 +265,7 @@ dependencies = [
 
 [[package]]
 name = "courtship-docs"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "rusqlite",
@@ -278,7 +278,7 @@ dependencies = [
 
 [[package]]
 name = "courtship-proxy"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -296,7 +296,7 @@ dependencies = [
 
 [[package]]
 name = "courtship-shaper"
-version = "1.0.0"
+version = "1.0.1"
 dependencies = [
  "anyhow",
  "base64 0.23.1",

@@ -58,7 +58,7 @@ impl ProxyServer {
                     "protocolVersion": "2024-11-05",
                     "serverInfo": {
                         "name": "courtship-proxy",
-                        "version": "1.0.0"
+                        "version": "1.0.1"
                     },
                     "capabilities": {
                         "tools": { "listChanged": true }

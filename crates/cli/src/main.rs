@@ -10,7 +10,7 @@ mod doctor;
 mod html_report;
 
 #[derive(Parser)]
-#[command(name = "court", version = "1.0.0", about = "Efficiency-governed MCP proxy and benchmarking CLI for LÖVE")]
+#[command(name = "court", version = "1.0.1", about = "Efficiency-governed MCP proxy and benchmarking CLI for LÖVE")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,

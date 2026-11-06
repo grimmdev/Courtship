@@ -7,11 +7,11 @@
     "url": "https://github.com/grimmdev/Courtship.git",
     "source": "github"
   },
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/grimmdev/courtship:1.0.0",
+      "identifier": "ghcr.io/grimmdev/courtship:1.0.1",
       "transport": {
         "type": "stdio"
       }
