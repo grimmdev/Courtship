@@ -14,7 +14,8 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Courtship Contributors"]
 license = "MIT OR Apache-2.0"
-homepage = "https://github.com/courtship/courtship"
+homepage = "https://github.com/grimmdev/Courtship"
+repository = "https://github.com/grimmdev/Courtship"
 
 [workspace.dependencies]
 tokio = { version = "1.43", features = ["full"] }

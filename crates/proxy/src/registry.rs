@@ -23,6 +23,7 @@ impl ToolRegistry {
             token_counter: counter,
         };
         registry.init_standing_tools();
+        registry.init_builtin_upstream_tools();
         registry
     }
 
@@ -35,7 +36,7 @@ impl ToolRegistry {
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
-                        "query": { "type": "string", "description": "Keyword or action (e.g. 'physics', 'screenshot', 'objects')" },
+                        "query": { "type": "string", "description": "Keyword or action (e.g. 'physics', 'screenshot', 'joypad', 'crash')" },
                         "limit": { "type": "integer", "default": 8 }
                     },
                     "required": ["query"]
@@ -84,6 +85,12 @@ impl ToolRegistry {
                     "properties": {}
                 }),
             },
+        ];
+    }
+
+    /// Builtin engine capabilities kept daemon-side to avoid polluting prompt context.
+    fn init_builtin_upstream_tools(&mut self) {
+        let tools = vec![
             ToolDefinition {
                 name: "simulate_input".to_string(),
                 description: "Agent Joypad: Dispatches timed keyboard and button sequences to test gameplay mechanics.".to_string(),
@@ -133,10 +140,61 @@ impl ToolRegistry {
                     "properties": {}
                 }),
             },
+            ToolDefinition {
+                name: "visual_diff".to_string(),
+                description: "Daemon-side perceptual image comparison returning localized bounding boxes and match percentages.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "image_a": { "type": "string", "description": "Base64 encoded reference image" },
+                        "image_b": { "type": "string", "description": "Base64 encoded candidate image" }
+                    },
+                    "required": ["image_a", "image_b"]
+                }),
+            },
+            ToolDefinition {
+                name: "get_objects".to_string(),
+                description: "Inspect active game entities and their positions.".to_string(),
+                input_schema: serde_json::json!({ "type": "object", "properties": {} }),
+            },
+            ToolDefinition {
+                name: "get_screenshot".to_string(),
+                description: "Captures a compressed, scaled framebuffer snapshot of the game.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "scale": { "type": "number", "default": 0.5 },
+                        "region": {
+                            "type": "object",
+                            "properties": {
+                                "x": { "type": "integer" },
+                                "y": { "type": "integer" },
+                                "width": { "type": "integer" },
+                                "height": { "type": "integer" }
+                            }
+                        }
+                    }
+                }),
+            },
+            ToolDefinition {
+                name: "run_lua".to_string(),
+                description: "Execute arbitrary Lua code within the live game state.".to_string(),
+                input_schema: serde_json::json!({
+                    "type": "object",
+                    "properties": {
+                        "code": { "type": "string", "description": "Lua source code snippet" }
+                    },
+                    "required": ["code"]
+                }),
+            },
         ];
+
+        for tool in tools {
+            self.upstream_tools.insert(tool.name.clone(), tool);
+        }
     }
 
-    /// Registers a tool definition provided by an upstream engine bridge.
+    /// Registers a tool definition provided by an external engine bridge.
     pub fn register_upstream_tool(&mut self, tool: ToolDefinition) {
         self.upstream_tools.insert(tool.name.clone(), tool);
     }
@@ -211,25 +269,20 @@ mod tests {
         let standing_tokens = registry.calculate_standing_tokens();
 
         println!("Standing surface tokens measured: {}", standing_tokens);
-        // Architectural target: standing surface stays well below 600 tokens
-        assert!(standing_tokens < 600, "Standing tokens was {standing_tokens}, exceeded 600 limit!");
+        // Architectural target: standing surface stays well below 500 tokens
+        assert!(standing_tokens < 500, "Standing tokens was {standing_tokens}, exceeded 500 limit!");
     }
 
     #[test]
     fn test_tool_discovery_and_eviction() {
         let counter = TokenCounter::default();
         let mut registry = ToolRegistry::new(2, counter);
-        registry.register_upstream_tool(ToolDefinition {
-            name: "get_objects".to_string(),
-            description: "Inspect game entities and their positions".to_string(),
-            input_schema: serde_json::json!({"type": "object"}),
-        });
 
-        let found = registry.discover("entities", 5);
+        let found = registry.discover("joypad", 5);
         assert_eq!(found.len(), 1);
-        assert_eq!(found[0].name, "get_objects");
+        assert_eq!(found[0].name, "simulate_input");
 
-        assert!(registry.load_schema("get_objects").is_some());
+        assert!(registry.load_schema("simulate_input").is_some());
         assert_eq!(registry.loaded_tools.len(), 1);
 
         registry.tick_turn();

@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use base64::Engine;
 use serde_json::Value;
 use courtship_shaper::{ResponseShaper, ShaperConfig, TokenCounter};
 use courtship_docs::DocsIndex;
@@ -140,6 +141,17 @@ impl ProxyServer {
                     "resumed": true
                 })
             }
+            "visual_diff" => {
+                let img_a_str = args.get("image_a").and_then(|v| v.as_str()).unwrap_or("");
+                let img_b_str = args.get("image_b").and_then(|v| v.as_str()).unwrap_or("");
+                let bytes_a = base64::engine::general_purpose::STANDARD.decode(img_a_str.trim().trim_start_matches("data:image/png;base64,")).unwrap_or_default();
+                let bytes_b = base64::engine::general_purpose::STANDARD.decode(img_b_str.trim().trim_start_matches("data:image/png;base64,")).unwrap_or_default();
+
+                match courtship_shaper::ScreenshotShaper::diff_images(&bytes_a, &bytes_b) {
+                    Ok(report) => serde_json::to_value(report).unwrap_or(Value::Null),
+                    Err(e) => serde_json::json!({ "error": format!("Visual diff failed: {}", e) }),
+                }
+            }
             "call_tool" => {
                 let inner_name = args.get("name").and_then(|v| v.as_str()).unwrap_or("");
                 let inner_args = args.get("arguments").cloned().unwrap_or(Value::Null);
@@ -206,7 +218,7 @@ mod tests {
         };
         let list_res = server.handle_rpc(list_req);
         let tools = list_res.result.unwrap().get("tools").unwrap().as_array().unwrap().len();
-        assert_eq!(tools, 9); // 9 core meta-tools
+        assert_eq!(tools, 5); // 5 standing meta-tools (<500 tokens)
     }
 
     #[test]
