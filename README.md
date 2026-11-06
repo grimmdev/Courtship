@@ -4,7 +4,7 @@
 
 **The protocol layer between your agent and your LÖVE game.**
 
-`courtship` (`court`) is an efficiency-governed MCP proxy and task-level benchmarking harness for LÖVE game development. It does not replace LovePilot or `love2d-mcp-server` — it **wraps** them, compresses what they return, loads only the schemas the task needs, and proves token and latency savings with CI regression gates.
+`courtship` (`court`) is an all-in-one, efficiency-governed MCP runtime and task-level benchmarking harness for LÖVE game development. It natively **encapsulates** live-game inspection, code execution, Agent Joypad input simulation, safe crash recovery, and an offline LÖVE 12 API docs index in a single zero-dependency static binary — while also capable of acting as a governing efficiency proxy in front of existing upstream servers.
 
 [![CI](https://github.com/grimmdev/Courtship/actions/workflows/ci.yml/badge.svg)](https://github.com/grimmdev/Courtship/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/grimmdev/Courtship)](https://github.com/grimmdev/Courtship/releases)
@@ -56,29 +56,35 @@ The proxy operates as a **daemon with an internal registry**, not a dumb passthr
 ## 3. Core Capabilities
 
 ### 3.1 Standing Surface (< 500 Tokens)
-Only 9 compact meta-tools are exposed permanently in context:
+Only 5 compact meta-tools are exposed permanently in standing context (~340 tokens), keeping context clean while allowing the agent to discover or invoke any game tool on-demand:
 - `discover_tools(query, limit)`: Fuzzy discovery without schema ingestion.
 - `load_tool_schema(name)`: Hydrates full JSON schema on-demand.
 - `call_tool(name, args)`: Executes tool through compression filters.
 - `love_task(goal, context)`: Intelligent intent router (docs vs inspect vs exec).
+- `report_usage()`: Session token, call, and latency accounting.
+
+### 3.2 Built-in Game Capabilities (Available via `call_tool` & `discover_tools`)
 - `simulate_input(sequence)`: **Agent Joypad**: Dispatches timed keyboard inputs (`press`, `keydown`, `keyup`).
 - `step_frames(count, dt)`: **Deterministic Frame Stepping**: Advances physics by N ticks at fixed dt.
 - `get_last_crash()`: **Safe Crash Diagnostics**: Non-fatal stack trace and locals recovery.
 - `clear_crash()`: Resumes game loop after hot-patching.
-- `report_usage()`: Session token, call, and latency accounting.
+- `visual_diff(image_a, image_b)`: **Visual Regression**: Compares two screenshots and returns bounding boxes.
+- `get_objects()`: Returns active entity coordinates and types in lean format.
+- `get_screenshot()`: Returns downscaled, cropped PNG framebuffers.
+- `run_lua(code)`: Evaluates arbitrary Lua inside the game loop.
 
-### 3.2 Safe Crash Interception (`love.errhand` override)
+### 3.3 Safe Crash Interception (`love.errhand` override)
 Prevents the infamous LÖVE **"Blue Screen of Death"** from crashing the process or severing the MCP bridge when an agent introduces a bug:
 - Replaces `love.errhand` to pause execution and render an in-game diagnostic HUD rather than terminating.
 - Extracts offending source file, line number, `debug.traceback()`, and active local variables.
 - Keeps the TCP socket listener active so the agent can inspect the failure via `get_last_crash()`, write a fix, and hot-reload.
 
-### 3.3 Agent Joypad & Deterministic Physics Verification
+### 3.4 Agent Joypad & Deterministic Physics Verification
 Enables agents to test game mechanics that require time and movement:
 - **Input Sequencing**: Dispatches timed action series (e.g. hold `D` for 1.2s, press `Space`, release).
 - **Frame Stepping**: Advances `love.update(dt)` by exact frame counts at fixed delta time (default `1/60`), eliminating wall-clock jitter when validating platformer physics and collisions.
 
-### 3.2 8-Rule Response Shaper
+### 3.5 8-Rule Response Shaper
 Every tool return and notification passes through deterministic shaping:
 1. **Field Projection**: Prunes entity graphs to `{id, type, name, x, y}`.
 2. **Null/Empty Stripping**: Drops empty arrays, objects, and empty strings.
@@ -89,7 +95,7 @@ Every tool return and notification passes through deterministic shaping:
 7. **Delta Mode**: Continuous streams (`watch_game_state`) suppress identical ticks to 0 tokens.
 8. **Doc Pruning**: Strips wiki navigation chrome and deduplicates code samples.
 
-### 3.3 Zero-Instrumentation Launcher (`court run`)
+### 3.6 Zero-Instrumentation Launcher (`court run`)
 Wraps any existing LÖVE game dynamically:
 ```bash
 court run ./mygame --mcp-port 12345
