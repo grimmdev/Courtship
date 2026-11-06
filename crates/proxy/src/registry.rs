@@ -67,7 +67,7 @@ impl ToolRegistry {
             },
             ToolDefinition {
                 name: "love_task".to_string(),
-                description: "Intelligent router for LÖVE development: routes to docs, live inspection, or code execution.".to_string(),
+                description: "Intelligent router for LOVE development: routes to docs, live inspection, or code execution.".to_string(),
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {

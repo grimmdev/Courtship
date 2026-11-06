@@ -9,7 +9,7 @@ pub struct DocPruner {
 impl DocPruner {
     pub fn new() -> Self {
         Self {
-            nav_regex: Regex::new(r"(?m)^\s*\[.*?\]\(.*?\)\s*(?:[>|•-]\s*\[.*?\]\(.*?\)\s*)+$").unwrap(),
+            nav_regex: Regex::new(r"(?m)^\s*\[.*?\]\(.*?\)\s*(?:[>|\-\x{2022}]\s*\[.*?\]\(.*?\)\s*)+$").unwrap(),
             excessive_newlines: Regex::new(r"\n{3,}").unwrap(),
         }
     }
@@ -71,7 +71,7 @@ mod tests {
     fn test_doc_pruning() {
         let pruner = DocPruner::default();
         let sample = r#"
-[LÖVE Wiki](https://love2d.org) > [love.graphics](https://love2d.org/wiki/graphics) > [draw](https://love2d.org/wiki/draw)
+[LOVE Wiki](https://love2d.org) > [love.graphics](https://love2d.org/wiki/graphics) > [draw](https://love2d.org/wiki/draw)
 
 Draws the object on screen.
 
@@ -83,7 +83,7 @@ love.graphics.draw(img, 10, 10)
 "#;
 
         let pruned = pruner.prune_text(sample);
-        assert!(!pruned.contains("[LÖVE Wiki]"));
+        assert!(!pruned.contains("[LOVE Wiki]"));
         assert!(pruned.contains("Draws the object on screen."));
         assert!(!pruned.contains("\n\n\n"));
     }

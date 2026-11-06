@@ -7,7 +7,7 @@ evict_after_turns = 6
 delta_notifications = true
 eager = false
 
-# Built-in LÖVE 12 SQLite FTS5 documentation index (Zero-network offline query)
+# Built-in LOVE 12 SQLite FTS5 documentation index (Zero-network offline query)
 [upstream.docs]
 transport = "builtin"
 index = ".courtship/docs.sqlite"

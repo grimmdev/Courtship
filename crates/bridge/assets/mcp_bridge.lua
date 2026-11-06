@@ -1,4 +1,4 @@
--- Courtship LÖVE Runtime Bridge
+-- Courtship LOVE Runtime Bridge
 -- Provides safe error containment, deterministic input simulation, and MCP TCP inspection.
 
 local bridge = {

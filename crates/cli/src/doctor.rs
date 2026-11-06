@@ -85,7 +85,7 @@ impl ConfigDoctor {
         println!("  [OK] Response Shaper: active (projection, depth cap, cursor store, delta tracker)");
         println!("  [OK] Safe Crash Interceptor: active on bridge (love.errhand override)");
         println!("  [OK] Agent Joypad & Step Frames: active");
-        println!("  [OK] LÖVE 12 Docs: SQLite FTS5 index ready");
+        println!("  [OK] LOVE 12 Docs: SQLite FTS5 index ready");
 
         if ci_mode && has_warnings {
             eprintln!("[Courtship Doctor] CI check failed due to configuration warnings.");

@@ -79,7 +79,7 @@ impl ProjectFingerprinter {
         }
 
         fp.agent_hint = if hint_parts.is_empty() {
-            "Standard LÖVE game loop; no third-party ECS or scene libraries detected.".to_string()
+            "Standard LOVE game loop; no third-party ECS or scene libraries detected.".to_string()
         } else {
             format!("Detected stack: {}. Target these APIs when inspecting or extending game entities.", hint_parts.join(" | "))
         };

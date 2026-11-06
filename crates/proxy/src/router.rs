@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_intent_routing() {
-        let (r1, t1) = IntentRouter::route_intent("How do I draw a rectangle in LÖVE?");
+        let (r1, t1) = IntentRouter::route_intent("How do I draw a rectangle in LOVE?");
         assert_eq!(r1, TaskRoute::Docs);
         assert!(t1.contains(&"search_docs"));
 

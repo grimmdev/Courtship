@@ -3,11 +3,21 @@
   "name": "io.github.grimmdev/courtship",
   "title": "Courtship",
   "description": "Efficiency-governed MCP runtime, proxy, and benchmark CLI for LOVE (Lua) games.",
+  "status": "active",
   "repository": {
-    "url": "https://github.com/grimmdev/Courtship.git",
+    "url": "https://github.com/grimmdev/Courtship",
     "source": "github"
   },
   "version": "1.0.1",
+  "icons": [
+    {
+      "src": "https://raw.githubusercontent.com/grimmdev/Courtship/main/assets/icon.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "128x128"
+      ]
+    }
+  ],
   "packages": [
     {
       "registryType": "oci",
@@ -18,4 +28,3 @@
     }
   ]
 }
-

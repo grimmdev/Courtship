@@ -10,7 +10,7 @@ mod doctor;
 mod html_report;
 
 #[derive(Parser)]
-#[command(name = "court", version = "1.0.1", about = "Efficiency-governed MCP proxy and benchmarking CLI for LÖVE")]
+#[command(name = "court", version = "1.0.1", about = "Efficiency-governed MCP proxy and benchmarking CLI for LOVE")]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -25,9 +25,9 @@ enum Commands {
         #[arg(long, default_value_t = false)]
         eager: bool,
     },
-    /// Zero-instrumentation LÖVE game launcher
+    /// Zero-instrumentation LOVE game launcher
     Run {
-        /// Path to the LÖVE game directory
+        /// Path to the LOVE game directory
         path: PathBuf,
         #[arg(long, default_value_t = 12345)]
         mcp_port: u16,
@@ -62,7 +62,7 @@ enum Commands {
         #[arg(long, default_value = "./suites")]
         suite_dir: PathBuf,
     },
-    /// Inspect local LÖVE 12 documentation index
+    /// Inspect local LOVE 12 documentation index
     Docs {
         #[command(subcommand)]
         cmd: DocsCommands,
@@ -126,7 +126,7 @@ async fn main() -> Result<()> {
 
             let generated = WrapperGenerator::generate_wrapper(&config)?;
             println!("[Courtship] Wrapper prepared at: {}", generated.display());
-            println!("[Courtship] Injected bridge listening for LÖVE on port {}", mcp_port);
+            println!("[Courtship] Injected bridge listening for LOVE on port {}", mcp_port);
             println!("[Courtship] Launching: love {}", generated.display());
             // Attempt to spawn 'love' executable if available in PATH
             match std::process::Command::new("love").arg(&generated).status() {

@@ -1,4 +1,4 @@
--- Sample LÖVE Platformer Fixture
+-- Sample LOVE Platformer Fixture
 local player = {
     x = 100,
     y = 300,
