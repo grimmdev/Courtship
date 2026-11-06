@@ -44,8 +44,14 @@ impl ProxyServer {
     }
 
     /// Handles incoming MCP JSON-RPC 2.0 requests.
-    pub fn handle_rpc(&self, req: JsonRpcRequest) -> JsonRpcResponse {
-        match req.method.as_str() {
+    /// Returns None for notifications (where id is None) per JSON-RPC 2.0 specification.
+    pub fn handle_rpc(&self, req: JsonRpcRequest) -> Option<JsonRpcResponse> {
+        if req.id.is_none() || req.method.starts_with("notifications/") {
+            // Notifications must never elicit a response in JSON-RPC 2.0
+            return None;
+        }
+
+        let res = match req.method.as_str() {
             "initialize" => JsonRpcResponse::success(
                 req.id,
                 serde_json::json!({
@@ -59,6 +65,7 @@ impl ProxyServer {
                     }
                 }),
             ),
+            "ping" => JsonRpcResponse::success(req.id, serde_json::json!({})),
             "tools/list" => {
                 let reg = self.registry.lock().unwrap();
                 let tools = if self.eager_mode {
@@ -76,8 +83,12 @@ impl ProxyServer {
                 let result = self.execute_tool(tool_name, args);
                 JsonRpcResponse::success(req.id, result)
             }
+            "resources/list" => JsonRpcResponse::success(req.id, serde_json::json!({ "resources": [] })),
+            "prompts/list" => JsonRpcResponse::success(req.id, serde_json::json!({ "prompts": [] })),
             _ => JsonRpcResponse::error(req.id, -32601, format!("Method not found: {}", req.method)),
-        }
+        };
+
+        Some(res)
     }
 
     /// Dispatches execution to internal meta-tools or upstream game bridges.
@@ -207,8 +218,27 @@ mod tests {
             method: "initialize".to_string(),
             params: None,
         };
-        let init_res = server.handle_rpc(init_req);
+        let init_res = server.handle_rpc(init_req).expect("initialize should return response");
         assert!(init_res.result.is_some());
+
+        // Test notification handling (must return None)
+        let notif_req = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            id: None,
+            method: "notifications/initialized".to_string(),
+            params: None,
+        };
+        assert!(server.handle_rpc(notif_req).is_none());
+
+        // Test ping
+        let ping_req = JsonRpcRequest {
+            jsonrpc: "2.0".to_string(),
+            id: Some(Value::from(99)),
+            method: "ping".to_string(),
+            params: None,
+        };
+        let ping_res = server.handle_rpc(ping_req).expect("ping should return response");
+        assert!(ping_res.result.is_some());
 
         let list_req = JsonRpcRequest {
             jsonrpc: "2.0".to_string(),
@@ -216,9 +246,11 @@ mod tests {
             method: "tools/list".to_string(),
             params: None,
         };
-        let list_res = server.handle_rpc(list_req);
-        let tools = list_res.result.unwrap().get("tools").unwrap().as_array().unwrap().len();
-        assert_eq!(tools, 5); // 5 standing meta-tools (<500 tokens)
+        let list_res = server.handle_rpc(list_req).expect("tools/list should return response");
+        let tools_arr = list_res.result.unwrap().get("tools").unwrap().as_array().unwrap().clone();
+        assert_eq!(tools_arr.len(), 5); // 5 standing meta-tools (<500 tokens)
+        // Verify inputSchema camelCase serialization
+        assert!(tools_arr[0].get("inputSchema").is_some());
     }
 
     #[test]
@@ -235,7 +267,7 @@ mod tests {
                 }
             })),
         };
-        let res = server.handle_rpc(call_req);
+        let res = server.handle_rpc(call_req).expect("call should return response");
         let result = res.result.unwrap();
         assert_eq!(result.get("route").unwrap().as_str().unwrap(), "Docs");
     }
@@ -259,7 +291,7 @@ mod tests {
                 }
             })),
         };
-        let input_res = server.handle_rpc(input_call);
+        let input_res = server.handle_rpc(input_call).expect("simulate_input should return response");
         assert_eq!(input_res.result.unwrap()["status"], "queued");
 
         // Test deterministic step_frames dispatch
@@ -272,7 +304,7 @@ mod tests {
                 "arguments": { "count": 10, "dt": 0.016666 }
             })),
         };
-        let step_res = server.handle_rpc(step_call);
+        let step_res = server.handle_rpc(step_call).expect("step_frames should return response");
         assert_eq!(step_res.result.unwrap()["status"], "stepped");
 
         // Test get_last_crash dispatch
@@ -285,7 +317,7 @@ mod tests {
                 "arguments": {}
             })),
         };
-        let crash_res = server.handle_rpc(crash_call);
+        let crash_res = server.handle_rpc(crash_call).expect("get_last_crash should return response");
         assert_eq!(crash_res.result.unwrap()["status"], "clean");
     }
 }

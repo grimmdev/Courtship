@@ -299,11 +299,12 @@ async fn run_stdio_server(server: ProxyServer) -> Result<()> {
             continue;
         }
         if let Ok(req) = serde_json::from_str::<courtship_proxy::JsonRpcRequest>(&line) {
-            let res = server.handle_rpc(req);
-            let serialized = serde_json::to_string(&res)?;
-            stdout.write_all(serialized.as_bytes()).await?;
-            stdout.write_all(b"\n").await?;
-            stdout.flush().await?;
+            if let Some(res) = server.handle_rpc(req) {
+                let serialized = serde_json::to_string(&res)?;
+                stdout.write_all(serialized.as_bytes()).await?;
+                stdout.write_all(b"\n").await?;
+                stdout.flush().await?;
+            }
         }
     }
 
