@@ -10,6 +10,9 @@ env:
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: 1
 
+permissions:
+  contents: write
+
 jobs:
   test-and-bench:
     name: Test & Benchmark Regression Gate
@@ -37,15 +40,16 @@ jobs:
       - name: Run Test Suite (Unit, Golden, Integration)
         run: cargo test --workspace
 
-      - name: Run Platformer Benchmark Gate
-        run: cargo run -p court -- bench --suite ./suites/platformer.yaml --ci --max-regression 10.0
-
-      - name: Run UI-Heavy Benchmark Gate
-        run: cargo run -p court -- bench --suite ./suites/ui_heavy.yaml --ci --max-regression 10.0
-
-      - name: Run Menu-Nested Benchmark Gate
-        run: cargo run -p court -- bench --suite ./suites/menu_nested.yaml --ci --max-regression 10.0
+      - name: Run All Benchmark Suites & Generate LÖVE Dashboard
+        run: cargo run -p court -- bench --all --compare lovepilot,courtship --ci --max-regression 10.0 --html-out public/index.html
 
       - name: Run MCP Configuration & Tax Audit
         run: cargo run -p court -- doctor --ci
 
+      - name: Deploy Benchmark Leaderboard to gh-pages Branch
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./public
+          keep_files: false
