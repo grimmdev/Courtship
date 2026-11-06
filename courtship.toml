@@ -7,18 +7,20 @@ evict_after_turns = 6
 delta_notifications = true
 eager = false
 
-[upstream.lovepilot]
-transport = "stdio"
-command = "uvx"
-args = ["--from", "./love-mcp", "love-mcp-server"]
-shape = { get_objects = "lean", get_screenshot = "scaled" }
-
+# Built-in LÖVE 12 SQLite FTS5 documentation index (Zero-network offline query)
 [upstream.docs]
 transport = "builtin"
-index = "./lua54-love12.sqlite"
+index = ".courtship/docs.sqlite"
+
+# Optional Upstream Wrapping:
+# If you run LovePilot or another third-party MCP server, uncomment below to let Courtship govern it.
+# [upstream.lovepilot]
+# transport = "stdio"
+# command = "uvx"
+# args = ["--from", "./love-mcp", "love-mcp-server"]
+# shape = { get_objects = "lean", get_screenshot = "scaled" }
 
 [bench]
 suite_dir = "./suites"
 baseline = ".courtship/baseline.json"
 max_regression = "10%"
-
