@@ -1,17 +1,25 @@
-use std::path::{Path, PathBuf};
-use std::fs;
-use serde::{Deserialize, Serialize};
+use std::path::{Path, PathBuf}; // Filesystem path representations
+use std::fs; // Filesystem inspection functions
+use serde::{Deserialize, Serialize}; // Serialization support for fingerprint reports
 
+/// Detected architectural patterns and entity conventions for a LOVE game codebase.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ArchitectureFingerprint {
+    /// Detected OOP or Entity-Component-System framework (e.g. Classic, Middleclass, Concord, Tiny-ECS).
     pub oop_system: Option<String>,
+    /// Detected collision or physics library (e.g. Bump.lua, HC, love.physics).
     pub collision_physics: Option<String>,
+    /// Detected scene or state management library (e.g. HUMP.gamestate, Roomy).
     pub state_management: Option<String>,
+    /// Detected tilemap or map engine (e.g. STI, Cartographer).
     pub map_engine: Option<String>,
+    /// Detected graphical user interface library (e.g. Gspot, SUIT).
     pub ui_library: Option<String>,
+    /// High-level guidance string injected into agent prompts to direct tool usage.
     pub agent_hint: String,
 }
 
+/// Static analyzer scanning Lua source files to fingerprint game engine architecture.
 pub struct ProjectFingerprinter;
 
 impl ProjectFingerprinter {
@@ -32,7 +40,7 @@ impl ProjectFingerprinter {
 
         let lower = combined_content.to_lowercase();
 
-        // 1. Detect OOP / Entity Framework
+        // Detect OOP / Entity Framework
         if lower.contains("concord.entity") || lower.contains("concord.component") {
             fp.oop_system = Some("Concord (ECS)".to_string());
         } else if lower.contains("tiny.system") || lower.contains("tiny.processingSystem") {
@@ -45,7 +53,7 @@ impl ProjectFingerprinter {
             fp.oop_system = Some("HUMP.class".to_string());
         }
 
-        // 2. Detect Physics / Collision
+        // Detect Physics / Collision
         if lower.contains("bump.newworld") || lower.contains("require(\"bump\")") || lower.contains("require('bump')") {
             fp.collision_physics = Some("Bump.lua (AABB / tile collision)".to_string());
         } else if lower.contains("love.physics.newworld") {
@@ -54,19 +62,19 @@ impl ProjectFingerprinter {
             fp.collision_physics = Some("HardonCollider".to_string());
         }
 
-        // 3. Detect Gamestate / Scene
+        // Detect Gamestate / Scene
         if lower.contains("gamestate.switch") || lower.contains("hump.gamestate") {
             fp.state_management = Some("HUMP Gamestate".to_string());
         } else if lower.contains("roomy.new") {
             fp.state_management = Some("Roomy Scene Manager".to_string());
         }
 
-        // 4. Detect Tilemap Engine
+        // Detect Tilemap Engine
         if lower.contains("sti(") || lower.contains("require(\"sti\")") || lower.contains("require('sti')") {
             fp.map_engine = Some("STI (Simple Tiled Implementation)".to_string());
         }
 
-        // 5. Generate concise, token-efficient agent guidance hint
+        // Generate concise, token-efficient agent guidance hint
         let mut hint_parts = Vec::new();
         if let Some(ref oop) = fp.oop_system {
             hint_parts.push(format!("OOP: {}", oop));

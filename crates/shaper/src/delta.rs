@@ -1,9 +1,12 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use serde_json::{Map, Value};
+use std::collections::HashMap; // Fast key-value hash map storing state snapshots
+use std::sync::{Arc, Mutex}; // Thread-safe synchronization primitives
+use serde_json::{Map, Value}; // Dynamic JSON object and value representations
 
+/// Thread-safe delta tracking engine for continuous game state streams.
+/// Suppresses identical ticks to zero tokens and emits minimal JSON diffs on mutation.
 #[derive(Debug, Clone, Default)]
 pub struct DeltaTracker {
+    /// In-memory map from stream identifier to previous full JSON state snapshot.
     snapshots: Arc<Mutex<HashMap<String, Value>>>,
 }
 
@@ -104,11 +107,11 @@ mod tests {
             "score": 50
         });
 
-        // 1. Initial snapshot
+        // Initial snapshot
         let res1 = tracker.compute_delta("game_state", state1).unwrap();
         assert!(res1.get("_initial_snapshot").is_some());
 
-        // 2. Unchanged state -> None (0 tokens emitted!)
+        // Unchanged state -> None (0 tokens emitted!)
         let state2 = serde_json::json!({
             "player": { "x": 100, "y": 200, "hp": 100 },
             "score": 50
@@ -116,13 +119,13 @@ mod tests {
         let res2 = tracker.compute_delta("game_state", state2);
         assert!(res2.is_none());
 
-        // 3. Mutated player x coordinate only
+        // Mutated player x coordinate only
         let state3 = serde_json::json!({
             "player": { "x": 115, "y": 200, "hp": 100 },
             "score": 50
         });
         let res3 = tracker.compute_delta("game_state", state3).unwrap();
-        assert_eq!(res3.get("_delta").unwrap().as_bool().unwrap(), true);
+        assert!(res3.get("_delta").unwrap().as_bool().unwrap());
 
         let changes = res3.get("changes").unwrap();
         assert!(changes.get("player").is_some());

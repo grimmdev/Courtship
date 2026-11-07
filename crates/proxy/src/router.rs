@@ -1,21 +1,43 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize}; // Serialization support for task routes
 
+/// Classified route target indicating which subsystem can best fulfill a user goal.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TaskRoute {
+    /// Offline documentation query against LOVE 12 API.
     Docs,
+    /// Live Lua execution or state modification in game loop.
     LiveExec,
+    /// Entity and game-state inspection.
     Inspect,
+    /// Visual verification via screenshot or perceptual visual diff.
     Visual,
+    /// Composite or ambiguous task requiring discovery.
     Mixed,
 }
 
+/// Heuristic intent classifier routing natural language goals to optimal tools.
+/// Reduces turn counts by guiding the agent directly to the relevant tool set.
 pub struct IntentRouter;
 
 impl IntentRouter {
+    /// Analyzes natural language prompt text and returns the optimal route and suggested tools.
+    ///
+    /// # Parameters
+    /// - `prompt`: User goal or task description.
+    ///
+    /// # Returns
+    /// A tuple of `(TaskRoute, Vec<&'static str>)` containing the classified route and tool names.
+    ///
+    /// # Example
+    /// ```
+    /// use courtship_proxy::router::{IntentRouter, TaskRoute};
+    /// let (route, tools) = IntentRouter::route_intent("How do I draw a circle in LOVE?");
+    /// assert_eq!(route, TaskRoute::Docs);
+    /// ```
     pub fn route_intent(prompt: &str) -> (TaskRoute, Vec<&'static str>) {
-        let lower = prompt.to_lowercase();
+        let lower = prompt.to_lowercase(); // Convert to lowercase for case-insensitive matching
 
-        // 1. Docs signal
+        // Documentation query signal (API lookups and syntax questions)
         if lower.contains("how do i")
             || lower.contains("signature")
             || lower.contains("docs")
@@ -25,7 +47,7 @@ impl IntentRouter {
             return (TaskRoute::Docs, vec!["lookup_symbol", "search_docs"]);
         }
 
-        // 2. Live exec / fix signal (action verbs take precedence over passive inspection nouns)
+        // Live execution signal (action verbs take precedence over passive inspection nouns)
         if lower.contains("run")
             || lower.contains("spawn")
             || lower.contains("set")
@@ -36,7 +58,7 @@ impl IntentRouter {
             return (TaskRoute::LiveExec, vec!["run_lua", "reload_code"]);
         }
 
-        // 3. Visual signal
+        // Visual verification signal (rendering, screenshots, appearance checks)
         if lower.contains("screenshot")
             || lower.contains("show me")
             || lower.contains("did it work")
@@ -45,7 +67,7 @@ impl IntentRouter {
             return (TaskRoute::Visual, vec!["get_screenshot"]);
         }
 
-        // 4. Inspect signal
+        // State inspection signal (entity positions, game state, object counts)
         if lower.contains("where is")
             || lower.contains("state")
             || lower.contains("objects")
@@ -55,6 +77,7 @@ impl IntentRouter {
             return (TaskRoute::Inspect, vec!["get_objects"]);
         }
 
+        // Default fallback for general or multi-faceted instructions
         (TaskRoute::Mixed, vec!["discover_tools", "call_tool"])
     }
 }

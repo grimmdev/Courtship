@@ -23,21 +23,21 @@ end
 function love.draw()
     love.graphics.clear(0.05, 0.05, 0.08)
 
-    -- 1. Status Bars
+    -- Status Bars
     love.graphics.setColor(0.8, 0.1, 0.1)
     love.graphics.rectangle("fill", 20, 20, (hud.hp / hud.max_hp) * 200, 20)
     love.graphics.setColor(1, 1, 1)
     love.graphics.rectangle("line", 20, 20, 200, 20)
     love.graphics.print(string.format("HP: %d/%d", hud.hp, hud.max_hp), 25, 24)
 
-    -- 2. Mana Bar
+    -- Mana Bar
     love.graphics.setColor(0.1, 0.3, 0.9)
     love.graphics.rectangle("fill", 20, 48, (hud.mana / hud.max_mana) * 200, 16)
     love.graphics.setColor(1, 1, 1)
     love.graphics.rectangle("line", 20, 48, 200, 16)
     love.graphics.print(string.format("MP: %d/%d", hud.mana, hud.max_mana), 25, 50)
 
-    -- 3. Inventory Grid (many draw calls)
+    -- Inventory Grid (many draw calls)
     for col = 0, 7 do
         for row = 0, 3 do
             local x = 20 + col * 48
@@ -49,7 +49,7 @@ function love.draw()
         end
     end
 
-    -- 4. Minimap readout
+    -- Minimap readout
     love.graphics.setColor(0.15, 0.2, 0.15)
     love.graphics.rectangle("fill", 620, 20, 160, 160)
     love.graphics.setColor(0.3, 0.8, 0.3)

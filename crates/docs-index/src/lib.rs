@@ -1,35 +1,52 @@
-use rusqlite::{params, Connection};
-use serde::{Deserialize, Serialize};
-use std::path::Path;
-use thiserror::Error;
+use rusqlite::{params, Connection}; // SQLite database driver and parameter binding
+use serde::{Deserialize, Serialize}; // Serialization support for documentation entries
+use std::path::Path; // Filesystem path operations
+use thiserror::Error; // Strongly typed error deriving
 
+/// Errors encountered during SQLite docs database operations.
 #[derive(Error, Debug)]
 pub enum DocsError {
+    /// SQLite engine error.
     #[error("SQLite error: {0}")]
     Sqlite(#[from] rusqlite::Error),
+    /// Filesystem input/output error.
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
 }
 
+/// Single API symbol documentation entry stored in SQLite FTS5.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocEntry {
+    /// Fully qualified symbol name (e.g. "love.graphics.draw").
     pub symbol: String,
+    /// Parent module namespace (e.g. "love.graphics").
     pub module: String,
+    /// Function signature (e.g. "love.graphics.draw(drawable, x, y, r, sx, sy)").
     pub signature: String,
+    /// Detailed description of symbol behavior.
     pub description: String,
+    /// Optional code usage example.
     pub example: Option<String>,
 }
 
+/// Compact search result returned from an FTS5 full-text query.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
+    /// Matched symbol name.
     pub symbol: String,
+    /// Parent module namespace.
     pub module: String,
+    /// Function signature.
     pub signature: String,
+    /// Relevant text snippet from description.
     pub snippet: String,
+    /// BM25 ranking relevance score.
     pub score: f64,
 }
 
+/// Offline full-text search engine for LOVE 12 API documentation powered by SQLite FTS5.
 pub struct DocsIndex {
+    /// Active SQLite connection instance.
     conn: Connection,
 }
 
@@ -100,8 +117,7 @@ impl DocsIndex {
 
     pub fn search(&self, query: &str, limit: usize) -> Result<Vec<SearchResult>, DocsError> {
         let sanitized_query = query
-            .replace('"', "")
-            .replace('*', "")
+            .replace(['"', '*'], "")
             .trim()
             .to_string();
 

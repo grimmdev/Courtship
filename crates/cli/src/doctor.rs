@@ -1,15 +1,21 @@
-use std::path::PathBuf;
-use std::fs;
-use serde_json::Value;
+use std::path::PathBuf; // Filesystem path representations
+use std::fs; // Filesystem read and inspection functions
+use serde_json::Value; // Arbitrary dynamic JSON parser
 
 /// Diagnostic outcome from auditing local AI client configurations.
 #[allow(dead_code)]
 pub struct DoctorReport {
+    /// List of configuration file paths located on disk and audited.
     pub configs_scanned: Vec<PathBuf>,
+    /// Unique MCP server names declared across all found client configs.
     pub mcp_servers_found: Vec<String>,
+    /// Server names defined redundantly across multiple client configs.
     pub duplicate_servers: Vec<String>,
+    /// Estimated uncompressed standing token tax across found servers.
     pub estimated_uncompressed_tax: usize,
+    /// Courtship standing schema surface token tax (~340 tokens).
     pub courtship_tax: usize,
+    /// Whether any potential conflict or efficiency warnings were identified.
     pub has_warnings: bool,
 }
 

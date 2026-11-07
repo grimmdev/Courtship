@@ -8,7 +8,7 @@
     "url": "https://github.com/grimmdev/Courtship",
     "source": "github"
   },
-  "version": "1.0.1",
+  "version": "1.0.2",
   "icons": [
     {
       "src": "https://raw.githubusercontent.com/grimmdev/Courtship/main/assets/icon.png",
@@ -21,7 +21,7 @@
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/grimmdev/courtship:1.0.1",
+      "identifier": "ghcr.io/grimmdev/courtship:1.0.2",
       "transport": {
         "type": "stdio"
       }

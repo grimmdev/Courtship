@@ -15,10 +15,10 @@ impl DocPruner {
     }
 
     pub fn prune_text(&self, raw: &str) -> String {
-        // 1. Remove navigation breadcrumbs
+        // Remove navigation breadcrumbs
         let without_nav = self.nav_regex.replace_all(raw, "");
 
-        // 2. Normalize whitespace and trailing spaces
+        // Normalize whitespace and trailing spaces
         let cleaned = self.excessive_newlines.replace_all(&without_nav, "\n\n");
 
         cleaned.trim().to_string()

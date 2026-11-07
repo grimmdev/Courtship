@@ -1,17 +1,25 @@
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
-use serde_json::Value;
+use std::collections::HashMap; // Fast key-value hash map storing active cursor continuations
+use std::sync::{Arc, Mutex}; // Thread-safe synchronization primitives
+use std::time::{Duration, Instant}; // High-resolution monotonic timers for TTL expiration
+use serde_json::Value; // Arbitrary dynamic JSON value type
 
+/// Internal representation of a sliced array payload awaiting agent retrieval.
 struct CachedSlice {
+    /// Remaining unconsumed JSON array elements.
     items: Vec<Value>,
+    /// Current read pointer offset within the array.
     offset: usize,
+    /// Monotonic timestamp when the continuation was stored.
     created_at: Instant,
 }
 
+/// In-memory pagination store for sliced large array payloads.
+/// Allows agents to inspect huge entity lists in compact chunks without context blowouts.
 #[derive(Clone)]
 pub struct CursorStore {
+    /// Map from generated cursor token string to cached slice state.
     cache: Arc<Mutex<HashMap<String, CachedSlice>>>,
+    /// Time-to-live duration before unconsumed slices are pruned.
     ttl: Duration,
 }
 
@@ -88,28 +96,28 @@ mod tests {
         let store = CursorStore::default();
         let items: Vec<Value> = (0..120).map(|i| serde_json::json!({ "id": i })).collect();
 
-        // 1. Store 120 items
+        // Store 120 items
         let cursor_id = store.store_continuation(items);
 
-        // 2. Fetch chunk of 50
+        // Fetch chunk of 50
         let (chunk1, next_cur) = store.fetch_chunk(&cursor_id, 50).unwrap();
         assert_eq!(chunk1.len(), 50);
         assert_eq!(chunk1[0]["id"], 0);
         assert!(next_cur.is_some());
 
-        // 3. Fetch second chunk of 50
+        // Fetch second chunk of 50
         let (chunk2, next_cur2) = store.fetch_chunk(&cursor_id, 50).unwrap();
         assert_eq!(chunk2.len(), 50);
         assert_eq!(chunk2[0]["id"], 50);
         assert!(next_cur2.is_some());
 
-        // 4. Fetch final remaining 20
+        // Fetch final remaining 20
         let (chunk3, next_cur3) = store.fetch_chunk(&cursor_id, 50).unwrap();
         assert_eq!(chunk3.len(), 20);
         assert_eq!(chunk3[0]["id"], 100);
         assert!(next_cur3.is_none()); // Fully drained
 
-        // 5. Subsequent fetch returns None
+        // Subsequent fetch returns None
         assert!(store.fetch_chunk(&cursor_id, 50).is_none());
     }
 }

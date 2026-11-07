@@ -1,17 +1,19 @@
-use std::path::PathBuf;
-use clap::{Parser, Subcommand};
-use anyhow::Result;
-use courtship_proxy::ProxyServer;
-use courtship_bridge::{WrapperConfig, WrapperGenerator};
-use courtship_bench::{BenchRunner, BenchSuite};
-use courtship_docs::DocsIndex;
+use std::path::PathBuf; // Filesystem path manipulation
+use clap::{Parser, Subcommand}; // Command-line argument parsing
+use anyhow::Result; // Ergonomic error handling with backtraces
+use courtship_proxy::ProxyServer; // Core MCP proxy server
+use courtship_bridge::{WrapperConfig, WrapperGenerator}; // LOVE game launcher wrapper generator
+use courtship_bench::{BenchRunner, BenchSuite}; // Benchmark suite runner and YAML loader
+use courtship_docs::DocsIndex; // Embedded SQLite FTS5 docs engine
 
-mod doctor;
-mod html_report;
+mod doctor; // Environment and MCP configuration audit module
+mod html_report; // HTML leaderboard dashboard generator
 
+/// Top-level command line interface definition for the Courtship binary.
 #[derive(Parser)]
-#[command(name = "court", version = "1.0.1", about = "Efficiency-governed MCP proxy and benchmarking CLI for LOVE")]
+#[command(name = "court", version = "1.0.2", about = "Efficiency-governed MCP proxy and benchmarking CLI for LOVE")]
 struct Cli {
+    /// Subcommand to execute
     #[command(subcommand)]
     command: Commands,
 }

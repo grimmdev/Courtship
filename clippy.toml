@@ -1,0 +1,37 @@
+# clippy.toml - Linter configuration properties for Courtship
+
+# Minimum Supported Rust Version
+msrv = "1.85.0"
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 25
+
+# Code structure thresholds
+too-many-arguments-threshold = 8
+too-many-lines-threshold = 500
+type-complexity-threshold = 250
+single-char-binding-names-threshold = 4
+
+# Known documentation identifiers allowed without backticks in doc comments
+doc-valid-idents = [
+    "Courtship",
+    "JSON-RPC",
+    "MCP",
+    "FTS5",
+    "SQLite",
+    "LOVE",
+    "Lua",
+    "BPE",
+    "cl100k_base",
+    "o200k_base",
+    "TTL",
+    "Joypad",
+    "Linux",
+    "Windows",
+    "macOS",
+    "OCI",
+    "GitHub",
+]
+
+# Disallowed placeholder names
+disallowed-names = ["foo", "bar", "baz"]

@@ -1,14 +1,20 @@
-use std::collections::HashMap;
-use serde_json::Value;
-use courtship_shaper::TokenCounter;
-use crate::protocol::{ToolDefinition, ToolSummary};
+use std::collections::HashMap; // Fast key-value hash map for upstream tool lookups
+use serde_json::Value; // Arbitrary dynamic JSON value type
+use courtship_shaper::TokenCounter; // Token accounting calibrated against cl100k_base
+use crate::protocol::{ToolDefinition, ToolSummary}; // Protocol representations of tools
 
 /// Manages active standing meta-tools, dynamic upstream tool discovery, and turn-based eviction.
+/// Ensures the standing context tax remains strictly below 500 tokens.
 pub struct ToolRegistry {
+    /// 5 permanent standing meta-tools exposed to the AI client (~340 tokens).
     standing_tools: Vec<ToolDefinition>,
+    /// Upstream tools available for on-demand hydration and execution.
     upstream_tools: HashMap<String, ToolDefinition>,
+    /// Map of currently hydrated tool names to remaining TTL turns before eviction.
     loaded_tools: HashMap<String, usize>,
+    /// Number of turns a tool schema remains active in context without usage.
     evict_after_turns: usize,
+    /// Token counter for measuring schema tax.
     token_counter: TokenCounter,
 }
 

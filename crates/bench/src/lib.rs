@@ -1,33 +1,47 @@
-use std::path::Path;
-use std::fs;
-use serde::{Deserialize, Serialize};
-use courtship_shaper::TokenCounter;
-use thiserror::Error;
+use std::path::Path; // Filesystem path representations
+use std::fs; // Filesystem read and write utilities
+use serde::{Deserialize, Serialize}; // Serialization and deserialization support
+use courtship_shaper::TokenCounter; // Token accounting calibrated against cl100k_base
+use thiserror::Error; // Strongly typed error deriving
 
+/// Errors encountered during benchmark execution, baseline comparison, or CI regression gating.
 #[derive(Error, Debug)]
 pub enum BenchError {
+    /// Filesystem error.
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
+    /// YAML suite parsing error.
     #[error("YAML parse error: {0}")]
     Yaml(#[from] serde_yaml::Error),
+    /// JSON serialization or deserialization error.
     #[error("JSON error: {0}")]
     Json(#[from] serde_json::Error),
+    /// Regression gate failure when token spend exceeds allowable threshold.
     #[error("Regression threshold exceeded: {0}")]
     Regression(String),
 }
 
+/// Verification criteria evaluated to determine if a benchmark task succeeded.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskExpectation {
+    /// Expected substring that must be present in target source file.
     pub file_contains: Option<String>,
+    /// Maximum allowed agent turns before task is marked failed.
     pub max_turns: Option<usize>,
+    /// Entity type that must exist in game world upon task completion.
     pub object_type_exists: Option<String>,
 }
 
+/// Single executable benchmark task defined in a YAML suite.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TaskDefinition {
+    /// Unique task identifier slug, e.g. "fix-double-jump".
     pub id: String,
+    /// Natural language prompt passed to the agent.
     pub prompt: String,
+    /// Verification expectations for judging success.
     pub expect: TaskExpectation,
+    /// Weight multiplier applied during aggregate score calculation.
     #[serde(default = "default_weight")]
     pub weight: usize,
 }
@@ -36,17 +50,25 @@ fn default_weight() -> usize {
     1
 }
 
+/// Initial environment setup configuration for a benchmark suite.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SuiteSetup {
+    /// Path to target fixture game.
     pub game: String,
+    /// Optional random number generator seed for deterministic simulation.
     pub seed: Option<u64>,
 }
 
+/// Declarative YAML benchmark suite containing tasks and execution constraints.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BenchSuite {
+    /// Human-readable suite name.
     pub name: String,
+    /// Setup and fixture configuration.
     pub setup: SuiteSetup,
+    /// Ordered list of tasks to execute.
     pub tasks: Vec<TaskDefinition>,
+    /// List of tracked metrics (e.g. "tokens", "latency", "turns").
     #[serde(default)]
     pub metrics: Vec<String>,
 }
@@ -150,11 +172,7 @@ impl BenchRunner {
         }
 
         let total_tasks = suite.tasks.len();
-        let avg_tokens_per_task = if total_tasks > 0 {
-            total_tokens / total_tasks
-        } else {
-            0
-        };
+        let avg_tokens_per_task = total_tokens.checked_div(total_tasks).unwrap_or(0);
 
         SuiteRunReport {
             suite_name: suite.name.clone(),
@@ -213,7 +231,7 @@ impl BenchRunner {
         };
 
         LeaderboardSubmission {
-            courtship_version: "1.0.1".to_string(),
+            courtship_version: "1.0.2".to_string(),
             suite_name: suite_name.to_string(),
             baseline_name: comp.baseline_name.clone(),
             candidate_name: comp.candidate_name.clone(),
@@ -273,6 +291,12 @@ impl BenchRunner {
         } else {
             Ok(())
         }
+    }
+}
+
+impl Default for BenchRunner {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

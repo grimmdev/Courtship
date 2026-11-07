@@ -1,13 +1,15 @@
-pub mod fingerprint;
+pub mod fingerprint; // Architecture detection and entity fingerprinting
 
-use std::path::PathBuf;
-use std::fs;
-use anyhow::{Context, Result};
+use std::path::PathBuf; // Filesystem path representations
+use std::fs; // Filesystem operations for wrapper creation
+use anyhow::{Context, Result}; // Error management with contextual messages
 
-pub use fingerprint::{ArchitectureFingerprint, ProjectFingerprinter};
+pub use fingerprint::{ArchitectureFingerprint, ProjectFingerprinter}; // Re-export fingerprinting API
 
+/// Statically embedded Lua bridge script included in the Courtship binary.
 pub const EMBEDDED_BRIDGE_LUA: &str = include_str!("../assets/mcp_bridge.lua");
 
+/// Minimal 5-line inline hook snippet emitted for manual integration into main.lua.
 pub const SHIM_SNIPPET: &str = r#"-- [Courtship MCP Hook]
 local courtship_ok, courtship = pcall(require, "mcp_bridge")
 if courtship_ok and courtship.init then
@@ -15,9 +17,13 @@ if courtship_ok and courtship.init then
 end
 "#;
 
+/// Configuration options for generating a zero-touch game launcher wrapper directory.
 pub struct WrapperConfig {
+    /// Directory containing the original LOVE game source code.
     pub game_source_dir: PathBuf,
+    /// TCP communication port used by the MCP bridge.
     pub mcp_port: u16,
+    /// Destination directory where the wrapper main.lua and bridge are generated.
     pub wrapper_dir: PathBuf,
 }
 
@@ -46,10 +52,10 @@ impl WrapperGenerator {
 local real_source = "{source_path_str}"
 local mcp_port = {port}
 
--- 1. Extend package.path so real game modules can be required
+-- Extend package.path so real game modules can be required
 package.path = real_source .. "/?.lua;" .. real_source .. "/?/init.lua;" .. package.path
 
--- 2. Mount original source into love filesystem
+-- Mount original source into love filesystem
 if love and love.filesystem then
     local mount_ok = love.filesystem.mount(real_source, "game_mount", true)
     if not mount_ok then
@@ -57,7 +63,7 @@ if love and love.filesystem then
     end
 end
 
--- 3. Load Courtship MCP bridge
+-- Load Courtship MCP bridge
 local bridge_ok, bridge = pcall(require, "mcp_bridge")
 if bridge_ok and bridge.init then
     bridge.init({{ port = mcp_port }})
@@ -65,14 +71,14 @@ else
     print("[Courtship] Running in offline/mock mode")
 end
 
--- 4. Load target game main.lua
+-- Load target game main.lua
 local real_main_path = real_source .. "/main.lua"
 local real_chunk, err = loadfile(real_main_path)
 if not real_chunk then
     error("[Courtship] Failed to load target game main.lua: " .. tostring(err))
 end
 
--- 5. Intercept love.update to process bridge input and event polling
+-- Intercept love.update to process bridge input and event polling
 local orig_update = love.update
 love.update = function(dt)
     if bridge and bridge.poll then

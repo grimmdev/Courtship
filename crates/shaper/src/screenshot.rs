@@ -1,29 +1,41 @@
-use std::io::Cursor;
-use image::{imageops::FilterType, GenericImageView, ImageFormat};
-use base64::{engine::general_purpose::STANDARD, Engine as _};
-use serde::{Deserialize, Serialize};
-use thiserror::Error;
+use std::io::Cursor; // In-memory byte buffer cursor for image decoding and encoding
+use image::{imageops::FilterType, GenericImageView, ImageFormat}; // Image manipulation primitives
+use base64::{engine::general_purpose::STANDARD, Engine as _}; // Standard base64 encoding and decoding
+use serde::{Deserialize, Serialize}; // Serialization support for diff and screenshot models
+use thiserror::Error; // Strongly typed error deriving
 
+/// Errors encountered during screenshot decoding, cropping, or compression.
 #[derive(Error, Debug)]
 pub enum ScreenshotError {
+    /// Error during base64 payload decoding.
     #[error("Base64 decode error: {0}")]
     Base64(#[from] base64::DecodeError),
+    /// Error during image pixel decoding or encoding.
     #[error("Image processing error: {0}")]
     Image(#[from] image::ImageError),
 }
 
+/// Bounding rectangle for regional screenshot cropping.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RegionCrop {
+    /// Horizontal origin coordinate in pixels.
     pub x: u32,
+    /// Vertical origin coordinate in pixels.
     pub y: u32,
+    /// Width of region in pixels.
     pub width: u32,
+    /// Height of region in pixels.
     pub height: u32,
 }
 
+/// Options controlling screenshot downscaling, cropping, and dimension clamping.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ScreenshotOptions {
+    /// Scaling multiplier applied to framebuffer (default 0.5 for 75% pixel reduction).
     pub scale: f32,
+    /// Optional bounding region to crop prior to scaling.
     pub region: Option<RegionCrop>,
+    /// Optional upper ceiling on image width or height in pixels.
     pub max_dimension: Option<u32>,
 }
 
@@ -37,14 +49,22 @@ impl Default for ScreenshotOptions {
     }
 }
 
+/// Compressed screenshot payload returned to the AI client.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ShapedScreenshot {
+    /// Base64 encoded PNG image data.
     pub image_base64: String,
+    /// MIME image format string, e.g. "image/png".
     pub format: String,
+    /// Scaled output image width in pixels.
     pub width: u32,
+    /// Scaled output image height in pixels.
     pub height: u32,
+    /// Original framebuffer width prior to compression.
     pub original_width: u32,
+    /// Original framebuffer height prior to compression.
     pub original_height: u32,
+    /// Actual geometric scale ratio applied.
     pub scale_applied: f32,
 }
 
@@ -255,7 +275,7 @@ mod tests {
         let mut img2_raw = RgbaImage::new(100, 100);
         for x in 0..100 {
             for y in 0..100 {
-                if x >= 20 && x <= 40 && y >= 20 && y <= 40 {
+                if (20..=40).contains(&x) && (20..=40).contains(&y) {
                     img2_raw.put_pixel(x, y, Rgba([255, 255, 255, 255]));
                 } else {
                     img2_raw.put_pixel(x, y, Rgba([0, 0, 0, 255]));
